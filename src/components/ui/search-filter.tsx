@@ -3,18 +3,18 @@ import { Search, X } from 'lucide-react';
 
 interface SearchFilterProps {
   title: string;
-  placeholder?: string;
   value: string;
   onChange: (value: string) => void;
+  placeholder?: string;
   className?: string;
 }
 
 export function SearchFilter({ 
   title, 
-  placeholder = "Search...", 
   value, 
   onChange, 
-  className = "" 
+  placeholder = "Search...",
+  className = ""
 }: SearchFilterProps) {
   const handleClear = () => {
     onChange('');
@@ -36,13 +36,14 @@ export function SearchFilter({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="block w-full pl-10 pr-10 py-2 border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pl-10 pr-10 py-2 border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
         
         {value && (
           <button
             onClick={handleClear}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-white text-gray-400 transition-colors"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
+            aria-label="Clear search"
           >
             <X className="h-4 w-4" />
           </button>

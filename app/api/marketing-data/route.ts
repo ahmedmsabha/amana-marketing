@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    
+
     return NextResponse.json(data, {
       status: 200,
       headers: {
@@ -29,9 +29,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching marketing data:', error);
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to fetch marketing data',
         message: error instanceof Error ? error.message : 'Unknown error'
       },

@@ -1,17 +1,16 @@
 "use client";
 import { useState, useEffect, useMemo } from 'react';
 import { fetchMarketingData } from '../../src/lib/api';
-import { MarketingData, Campaign, WeeklyPerformance } from '../../src/types/marketing';
+import { MarketingData, Campaign, DevicePerformance } from '../../src/types/marketing';
 import { Navbar } from '../../src/components/ui/navbar';
 import { Footer } from '../../src/components/ui/footer';
 import { CardMetric } from '../../src/components/ui/card-metric';
-import { LineChart } from '../../src/components/ui/line-chart';
+import { BarChart } from '../../src/components/ui/bar-chart';
 import { Table } from '../../src/components/ui/table';
-import { Calendar, TrendingUp, DollarSign, MousePointer, Target, BarChart3 } from 'lucide-react';
+import { Monitor, Smartphone, Tablet, TrendingUp, DollarSign, MousePointer } from 'lucide-react';
 
-interface WeeklyAggregation {
-  weekStart: string;
-  weekEnd: string;
+interface DeviceAggregation {
+  device: string;
   totalImpressions: number;
   totalClicks: number;
   totalConversions: number;
@@ -20,9 +19,10 @@ interface WeeklyAggregation {
   averageCTR: number;
   averageConversionRate: number;
   averageROAS: number;
+  trafficPercentage: number;
 }
 
-export default function WeeklyView() {
+export default function DeviceView() {
   const [marketingData, setMarketingData] = useState<MarketingData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,20 +44,17 @@ export default function WeeklyView() {
     loadData();
   }, []);
 
-  // Process weekly data
-  const weeklyData = useMemo(() => {
+  // Process device data
+  const deviceData = useMemo(() => {
     if (!marketingData?.campaigns) return null;
 
-    const weeklyMap: { [key: string]: WeeklyAggregation } = {};
+    const deviceMap: { [key: string]: DeviceAggregation } = {};
 
     marketingData.campaigns.forEach((campaign: Campaign) => {
-      campaign.weekly_performance.forEach((week: WeeklyPerformance) => {
-        const key = week.week_start;
-
-        if (!weeklyMap[key]) {
-          weeklyMap[key] = {
-            weekStart: week.week_start,
-            weekEnd: week.week_end,
+      campaign.device_performance.forEach((device: DevicePerformance) => {
+        if (!deviceMap[device.device]) {
+          deviceMap[device.device] = {
+            device: device.device,
             totalImpressions: 0,
             totalClicks: 0,
             totalConversions: 0,
@@ -65,69 +62,71 @@ export default function WeeklyView() {
             totalRevenue: 0,
             averageCTR: 0,
             averageConversionRate: 0,
-            averageROAS: 0
+            averageROAS: 0,
+            trafficPercentage: 0
           };
         }
 
-        weeklyMap[key].totalImpressions += week.impressions;
-        weeklyMap[key].totalClicks += week.clicks;
-        weeklyMap[key].totalConversions += week.conversions;
-        weeklyMap[key].totalSpend += week.spend;
-        weeklyMap[key].totalRevenue += week.revenue;
+        // Calculate proportional spend and revenue based on traffic percentage
+        const proportionalSpend = campaign.spend * (device.percentage_of_traffic / 100);
+        const proportionalRevenue = campaign.revenue * (device.percentage_of_traffic / 100);
+
+        deviceMap[device.device].totalImpressions += device.impressions;
+        deviceMap[device.device].totalClicks += device.clicks;
+        deviceMap[device.device].totalConversions += device.conversions;
+        deviceMap[device.device].totalSpend += proportionalSpend;
+        deviceMap[device.device].totalRevenue += proportionalRevenue;
+        deviceMap[device.device].trafficPercentage += device.percentage_of_traffic;
       });
     });
 
-    // Calculate averages for each week
-    Object.values(weeklyMap).forEach(week => {
-      week.averageCTR = week.totalImpressions > 0 ? (week.totalClicks / week.totalImpressions) * 100 : 0;
-      week.averageConversionRate = week.totalClicks > 0 ? (week.totalConversions / week.totalClicks) * 100 : 0;
-      week.averageROAS = week.totalSpend > 0 ? week.totalRevenue / week.totalSpend : 0;
+    // Calculate averages for each device
+    Object.values(deviceMap).forEach(device => {
+      device.averageCTR = device.totalImpressions > 0 ? (device.totalClicks / device.totalImpressions) * 100 : 0;
+      device.averageConversionRate = device.totalClicks > 0 ? (device.totalConversions / device.totalClicks) * 100 : 0;
+      device.averageROAS = device.totalSpend > 0 ? device.totalRevenue / device.totalSpend : 0;
     });
 
-    // Sort weeks chronologically
-    const sortedWeeks = Object.values(weeklyMap).sort((a, b) =>
-      new Date(a.weekStart).getTime() - new Date(b.weekStart).getTime()
-    );
+    const devices = Object.values(deviceMap);
 
-    // Prepare line chart data
-    const spendTrendData = sortedWeeks.map(week => ({
-      label: new Date(week.weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      value: week.totalSpend,
-      date: week.weekStart
+    // Prepare chart data
+    const clicksData = devices.map(device => ({
+      label: device.device,
+      value: device.totalClicks,
+      color: device.device === 'Mobile' ? '#10B981' : 
+             device.device === 'Desktop' ? '#3B82F6' : 
+             device.device === 'Tablet' ? '#F59E0B' : '#8B5CF6'
     }));
 
-    const revenueTrendData = sortedWeeks.map(week => ({
-      label: new Date(week.weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      value: week.totalRevenue,
-      date: week.weekStart
-    }));
-
-    const clicksTrendData = sortedWeeks.map(week => ({
-      label: new Date(week.weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      value: week.totalClicks,
-      date: week.weekStart
-    }));
-
-    const conversionsTrendData = sortedWeeks.map(week => ({
-      label: new Date(week.weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      value: week.totalConversions,
-      date: week.weekStart
+    const revenueData = devices.map(device => ({
+      label: device.device,
+      value: device.totalRevenue,
+      color: device.device === 'Mobile' ? '#10B981' : 
+             device.device === 'Desktop' ? '#3B82F6' : 
+             device.device === 'Tablet' ? '#F59E0B' : '#8B5CF6'
     }));
 
     return {
-      weeks: sortedWeeks,
-      spendTrendData,
-      revenueTrendData,
-      clicksTrendData,
-      conversionsTrendData,
-      totalWeeks: sortedWeeks.length,
-      totalSpend: sortedWeeks.reduce((sum, w) => sum + w.totalSpend, 0),
-      totalRevenue: sortedWeeks.reduce((sum, w) => sum + w.totalRevenue, 0),
-      totalConversions: sortedWeeks.reduce((sum, w) => sum + w.totalConversions, 0),
-      averageWeeklySpend: sortedWeeks.reduce((sum, w) => sum + w.totalSpend, 0) / sortedWeeks.length,
-      averageWeeklyRevenue: sortedWeeks.reduce((sum, w) => sum + w.totalRevenue, 0) / sortedWeeks.length
+      devices: devices.sort((a, b) => b.totalRevenue - a.totalRevenue),
+      clicksData,
+      revenueData,
+      totalDevices: devices.length,
+      totalSpend: devices.reduce((sum, d) => sum + d.totalSpend, 0),
+      totalRevenue: devices.reduce((sum, d) => sum + d.totalRevenue, 0),
+      totalClicks: devices.reduce((sum, d) => sum + d.totalClicks, 0)
     };
   }, [marketingData]);
+
+  const getDeviceIcon = (deviceName: string) => {
+    const device = deviceName.toLowerCase();
+    if (device.includes('mobile') || device.includes('phone')) {
+      return <Smartphone className="h-5 w-5" />;
+    } else if (device.includes('tablet')) {
+      return <Tablet className="h-5 w-5" />;
+    } else {
+      return <Monitor className="h-5 w-5" />;
+    }
+  };
 
   if (loading) {
     return (
@@ -156,7 +155,7 @@ export default function WeeklyView() {
                 </div>
               ) : (
                 <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold">
-                  Weekly Performance Analytics
+                  Device Performance Analytics
                 </h1>
               )}
             </div>
@@ -165,118 +164,73 @@ export default function WeeklyView() {
 
         {/* Content Area */}
         <div className="flex-1 p-3 sm:p-4 lg:p-6 overflow-y-auto w-full max-w-full">
-          {marketingData && weeklyData && (
+          {marketingData && deviceData && (
             <>
-              {/* Weekly Summary Cards */}
+              {/* Device Summary Cards */}
               <div className="mb-6 sm:mb-8">
                 <h2 className="text-lg sm:text-xl font-semibold text-white mb-4">
-                  Weekly Performance Overview
+                  Device Performance Overview
                 </h2>
-                <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   <CardMetric
-                    title="Total Weeks"
-                    value={weeklyData.totalWeeks}
-                    icon={<Calendar className="h-5 w-5" />}
+                    title="Active Device Types"
+                    value={deviceData.totalDevices}
+                    icon={<Monitor className="h-5 w-5" />}
                   />
-
+                  
                   <CardMetric
-                    title="Total Spend"
-                    value={`$${weeklyData.totalSpend.toLocaleString()}`}
+                    title="Total Device Clicks"
+                    value={deviceData.totalClicks.toLocaleString()}
+                    icon={<MousePointer className="h-5 w-5" />}
+                  />
+                  
+                  <CardMetric
+                    title="Total Device Spend"
+                    value={`$${deviceData.totalSpend.toLocaleString()}`}
                     icon={<DollarSign className="h-5 w-5" />}
                   />
-
+                  
                   <CardMetric
-                    title="Total Revenue"
-                    value={`$${weeklyData.totalRevenue.toLocaleString()}`}
+                    title="Total Device Revenue"
+                    value={`$${deviceData.totalRevenue.toLocaleString()}`}
                     icon={<TrendingUp className="h-5 w-5" />}
-                  />
-
-                  <CardMetric
-                    title="Total Conversions"
-                    value={weeklyData.totalConversions.toLocaleString()}
-                    icon={<Target className="h-5 w-5" />}
-                  />
-
-                  <CardMetric
-                    title="Avg Weekly Spend"
-                    value={`$${Math.round(weeklyData.averageWeeklySpend).toLocaleString()}`}
-                    icon={<BarChart3 className="h-5 w-5" />}
-                  />
-
-                  <CardMetric
-                    title="Avg Weekly Revenue"
-                    value={`$${Math.round(weeklyData.averageWeeklyRevenue).toLocaleString()}`}
-                    icon={<MousePointer className="h-5 w-5" />}
                   />
                 </div>
               </div>
 
-              {/* Weekly Trend Line Charts */}
+              {/* Device Performance Charts */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                <LineChart
-                  title="Weekly Spend Trend"
-                  data={weeklyData.spendTrendData}
-                  color="#F59E0B"
-                  formatValue={(value) => `$${value.toLocaleString()}`}
-                  height={300}
+                <BarChart
+                  title="Total Clicks by Device"
+                  data={deviceData.clicksData}
+                  formatValue={(value) => value.toLocaleString()}
                 />
 
-                <LineChart
-                  title="Weekly Revenue Trend"
-                  data={weeklyData.revenueTrendData}
-                  color="#10B981"
+                <BarChart
+                  title="Total Revenue by Device"
+                  data={deviceData.revenueData}
                   formatValue={(value) => `$${value.toLocaleString()}`}
-                  height={300}
                 />
               </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                <LineChart
-                  title="Weekly Clicks Trend"
-                  data={weeklyData.clicksTrendData}
-                  color="#3B82F6"
-                  formatValue={(value) => value.toLocaleString()}
-                  height={300}
-                />
-
-                <LineChart
-                  title="Weekly Conversions Trend"
-                  data={weeklyData.conversionsTrendData}
-                  color="#8B5CF6"
-                  formatValue={(value) => value.toLocaleString()}
-                  height={300}
-                />
-              </div>
-
-              {/* Weekly Performance Table */}
+              {/* Device Performance Table */}
               <div className="overflow-x-auto w-full max-w-full">
                 <Table
-                  title="Detailed Weekly Performance"
+                  title="Detailed Device Performance"
                   showIndex={true}
                   maxHeight="500px"
                   columns={[
                     {
-                      key: 'weekStart',
-                      header: 'Week Start',
-                      width: '12%',
+                      key: 'device',
+                      header: 'Device Type',
+                      width: '15%',
                       sortable: true,
                       sortType: 'string',
                       render: (value) => (
-                        <span className="font-medium text-blue-400">
-                          {new Date(value).toLocaleDateString()}
-                        </span>
-                      )
-                    },
-                    {
-                      key: 'weekEnd',
-                      header: 'Week End',
-                      width: '12%',
-                      sortable: true,
-                      sortType: 'string',
-                      render: (value) => (
-                        <span className="text-gray-300">
-                          {new Date(value).toLocaleDateString()}
-                        </span>
+                        <div className="flex items-center space-x-2">
+                          {getDeviceIcon(value)}
+                          <span className="font-medium text-blue-400">{value}</span>
+                        </div>
                       )
                     },
                     {
@@ -357,7 +311,7 @@ export default function WeeklyView() {
                     {
                       key: 'averageROAS',
                       header: 'ROAS',
-                      width: '8%',
+                      width: '9%',
                       align: 'right',
                       sortable: true,
                       sortType: 'number',
@@ -366,11 +320,24 @@ export default function WeeklyView() {
                           {value.toFixed(1)}x
                         </span>
                       )
+                    },
+                    {
+                      key: 'trafficPercentage',
+                      header: 'Traffic %',
+                      width: '10%',
+                      align: 'right',
+                      sortable: true,
+                      sortType: 'number',
+                      render: (value) => (
+                        <span className="text-purple-400 font-medium">
+                          {value.toFixed(1)}%
+                        </span>
+                      )
                     }
                   ]}
-                  defaultSort={{ key: 'weekStart', direction: 'desc' }}
-                  data={weeklyData.weeks}
-                  emptyMessage="No weekly data available"
+                  defaultSort={{ key: 'totalRevenue', direction: 'desc' }}
+                  data={deviceData.devices}
+                  emptyMessage="No device data available"
                 />
               </div>
             </>

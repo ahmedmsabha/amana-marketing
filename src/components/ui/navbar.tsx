@@ -1,17 +1,18 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { 
-  Home, 
-  Menu, 
-  X, 
-  ChevronLeft, 
+import {
+  Home,
+  Menu,
+  X,
+  ChevronLeft,
   ChevronRight,
   Target,
   Users,
   Calendar,
   MapPin,
-  BarChart3
+  BarChart3,
+  Monitor
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -33,6 +34,7 @@ const navigationItems: NavigationItem[] = [
   { id: "demographic-view", name: "Demographic View", icon: Users, href: "/demographic-view" },
   { id: "weekly-view", name: "Weekly View", icon: Calendar, href: "/weekly-view" },
   { id: "region-view", name: "Region View", icon: MapPin, href: "/region-view" },
+  { id: "device-view", name: "Device View", icon: Monitor, href: "/device-view" },
 ];
 
 export function Navbar({ className = "" }: NavbarProps) {
@@ -40,13 +42,13 @@ export function Navbar({ className = "" }: NavbarProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  
+
   // Determine active item based on current pathname
   const getActiveItem = (currentPath: string) => {
     const currentItem = navigationItems.find(item => item.href === currentPath);
     return currentItem ? currentItem.id : "overview";
   };
-  
+
   const [activeItem, setActiveItem] = useState(() => getActiveItem(pathname));
 
   // Update active item when pathname changes
@@ -63,7 +65,7 @@ export function Navbar({ className = "" }: NavbarProps) {
         setIsOpen(false);
       }
     };
-    
+
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -88,17 +90,17 @@ export function Navbar({ className = "" }: NavbarProps) {
         className="fixed top-6 left-6 z-50 p-3 rounded-lg bg-gray-800 shadow-md border border-gray-700 lg:hidden hover:bg-gray-700 transition-all duration-200 cursor-pointer"
         aria-label="Toggle sidebar"
       >
-        {isOpen ? 
-          <X className="h-5 w-5 text-gray-300" /> : 
+        {isOpen ?
+          <X className="h-5 w-5 text-gray-300" /> :
           <Menu className="h-5 w-5 text-gray-300" />
         }
       </button>
 
       {/* Mobile overlay */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 lg:hidden transition-opacity duration-300" 
-          onClick={toggleSidebar} 
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 lg:hidden transition-opacity duration-300"
+          onClick={toggleSidebar}
         />
       )}
 
@@ -172,14 +174,14 @@ export function Navbar({ className = "" }: NavbarProps) {
                       <Icon
                         className={`
                           h-4.5 w-4.5 flex-shrink-0
-                          ${isActive 
-                            ? "text-white" 
+                          ${isActive
+                            ? "text-white"
                             : "text-gray-400 group-hover:text-gray-200"
                           }
                         `}
                       />
                     </div>
-                    
+
                     {!isCollapsed && (
                       <div className="flex items-center justify-between w-full">
                         <span className={`text-sm ${isActive ? "font-medium" : "font-normal"}`}>{item.name}</span>
