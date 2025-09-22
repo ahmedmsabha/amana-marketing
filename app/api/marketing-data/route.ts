@@ -7,7 +7,6 @@ export async function GET(request: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
       },
-      // Add cache control to prevent stale data
       cache: 'no-store'
     });
 
@@ -21,7 +20,6 @@ export async function GET(request: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        // Add CORS headers for local development
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
@@ -33,14 +31,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         error: 'Failed to fetch marketing data',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        }
+      }
     );
   }
 }
 
-// Handle OPTIONS requests for CORS
 export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 200,

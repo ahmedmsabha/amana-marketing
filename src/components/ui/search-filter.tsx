@@ -9,10 +9,10 @@ interface SearchFilterProps {
   className?: string;
 }
 
-export function SearchFilter({ 
-  title, 
-  value, 
-  onChange, 
+export function SearchFilter({
+  title,
+  value,
+  onChange,
   placeholder = "Search...",
   className = ""
 }: SearchFilterProps) {
@@ -25,12 +25,12 @@ export function SearchFilter({
       <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-3">
         {title}
       </h3>
-      
+
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <Search className="h-4 w-4 text-gray-400" />
         </div>
-        
+
         <input
           type="text"
           value={value}
@@ -38,7 +38,7 @@ export function SearchFilter({
           placeholder={placeholder}
           className="w-full pl-10 pr-10 py-2 border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
-        
+
         {value && (
           <button
             onClick={handleClear}
